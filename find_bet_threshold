@@ -12,9 +12,10 @@ def main():
         "-f", action="append", default=[], help="BET threshold value")
     arguments = parser.parse_args()
     
-    print("Running N4BiasFieldCorrection...")
-    subprocess.check_call([
-        "N4BiasFieldCorrection", "-i", arguments.input, "-o", "N4.nii.gz"])
+    if not os.path.isfile("N4.nii.gz"):
+        print("Running N4BiasFieldCorrection...")
+        subprocess.check_call([
+            "N4BiasFieldCorrection", "-i", arguments.input, "-o", "N4.nii.gz"])
     
     for value in arguments.f:
         print(f"Running BET with threshold {value}...")
