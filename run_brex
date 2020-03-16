@@ -1,0 +1,61 @@
+#!/usr/bin/env python3
+
+import argparse
+import os
+import pathlib
+import shutil
+import subprocess
+import sys
+
+def main():
+    parser = argparse.ArgumentParser(description="Determine best BET threshold on image")
+    parser.add_argument(
+        "input", type=pathlib.Path, help="Input image")
+    parser.add_argument(
+        "head_mask", type=pathlib.Path, 
+        help="Mask (or template) of whole head")
+    parser.add_argument(
+        "brain_mask", type=pathlib.Path, 
+        help="Mask (or template) of brain")
+    parser.add_argument(
+        "-f", required=True, help="BET threshold value")
+    arguments = parser.parse_args()
+    
+    here = arguments.input.parent
+    
+    # Copy masks, gzip if necessary
+    shutil.copy(arguments.head_mask, here)
+    head_mask = here/arguments.head_mask.name
+    if not str(head_mask).endswith(".gz"):
+        subprocess.check_call(["gzip", "-f", head_mask])
+        head_mask = head_mask.parent/(head_mask.name+".gz")
+    
+    shutil.copy(arguments.brain_mask, here)
+    brain_mask = here/arguments.brain_mask.name
+    if not str(brain_mask).endswith(".gz"):
+        subprocess.check_call(["gzip", "-f", brain_mask])
+        brain_mask = brain_mask.parent/(brain_mask.name+".gz")
+    
+    # Copy atlasBREX.sh
+    shutil.copy(
+        "/media/sf_Database/Tools/atlasBREX.sh", here)
+    
+    subprocess.check_call([
+        "bash", "atlasBREX.sh", 
+        "-h", arguments.input.name, "-nb", head_mask.name, "-b", brain_mask.name,
+        # Run atlasBREX with ANTs but without N4 since we are starting with the N4 image
+        "-f", arguments.f, "-reg", "3", "-w", "1"],
+        cwd=here)
+    
+    os.remove(here/"atlasBREX.sh")
+    try:
+        os.remove(str(head_mask))
+    except Exception as e:
+        print(f"Could not remove {head_mask}: {e}")
+    try:
+        os.remove(str(brain_mask))
+    except Exception as e:
+        print(f"Could not remove {brain_mask}: {e}")
+    
+if __name__ == "__main__":
+    sys.exit(main())
