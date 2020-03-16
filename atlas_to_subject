@@ -1,0 +1,50 @@
+#!/usr/bin/env python3
+
+import argparse
+import subprocess
+import sys
+
+import nibabel
+import numpy
+import pandas
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Non-linear registration of an atlas (template+labels) to subject space")
+    parser.add_argument("subject", help="Subject image")
+    parser.add_argument("atlas", help="Template image of atlas")
+    parser.add_argument("labels", help="Label image of atlas")
+    parser.add_argument("dictionary", help="Names of the labels")
+    parser.add_argument("prefix", help="Prefix of output files")
+    parser.add_argument("volumes", help="Path to the volumes file")
+    arguments = parser.parse_args()
+    
+    subprocess.check_call([
+        "antsRegistrationSyN.sh", "-d", "3", 
+        "-n", subprocess.check_output("nproc").strip(),
+        "-f", arguments.subject, "-m", arguments.atlas, 
+        "-t", "s", "-o", arguments.prefix])
+    
+    subprocess.check_call([
+        "antsApplyTransforms", "-d", "3",
+        "-i", arguments.labels, "-r", arguments.subject,
+        "-t", f"{arguments.prefix}1Warp.nii.gz", 
+        "-t", f"{arguments.prefix}0GenericAffine.mat", 
+        "-n", "NearestNeighbor",
+        "-o", arguments.prefix+"_labels.nii.gz"])
+    
+    dictionary = pandas.read_csv(
+        arguments.dictionary, names=["label", "name", "r", "g", "b", "a"], sep=" ")
+    
+    image = nibabel.load(arguments.prefix+"_labels.nii.gz")
+    voxel_volume = numpy.abs(numpy.linalg.det(image.affine[:3,:3]))
+    data = image.get_data().astype(int)
+    volumes = []
+    for row in dictionary.iterrows():
+        count = (data == row[1].label).sum()
+        volumes.append([row[1]["name"], row[1]["label"], voxel_volume*count])
+    volumes = pandas.DataFrame(volumes, columns=["Name", "Label", "Volume (mm³)"])
+    volumes.to_excel(arguments.volumes, index=False)
+    
+if __name__ == "__main__":
+    sys.exit(main())
