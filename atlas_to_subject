@@ -20,7 +20,7 @@ def main():
     arguments = parser.parse_args()
     
     subprocess.check_call([
-        "antsRegistrationSyN.sh", "-d", "3", 
+        "antsRegistrationSyN.sh", "-d", "3", "-p", "f",
         "-n", subprocess.check_output("nproc").strip(),
         "-f", arguments.subject, "-m", arguments.atlas, 
         "-t", "s", "-o", arguments.prefix])
