@@ -21,6 +21,13 @@ def main():
         "-f", required=True, help="BET threshold value")
     arguments = parser.parse_args()
     
+    try:
+        atlasBREX_sh = subprocess.check_output(
+                ["which", "atlasBREX.sh"]
+            ).strip().decode()
+    except subprocess.CalledProcessError:
+        parser.error("Could not find atlasBREX.sh. Is it in the PATH?")
+    
     here = arguments.input.parent
     
     # Copy masks, gzip if necessary
@@ -37,8 +44,7 @@ def main():
         brain_mask = brain_mask.parent/(brain_mask.name+".gz")
     
     # Copy atlasBREX.sh
-    shutil.copy(
-        "/media/sf_Database/Tools/atlasBREX.sh", here)
+    shutil.copy(atlasBREX_sh, here)
     
     subprocess.check_call([
         "bash", "atlasBREX.sh", 
