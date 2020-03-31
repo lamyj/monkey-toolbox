@@ -37,7 +37,7 @@ def main():
     
     # Copy masks, gzip if necessary
     try:
-        shutil.copy(str(arguments.head_mask), here)
+        shutil.copy(str(arguments.head_mask), str(here))
     except shutil.SameFileError:
         pass
     head_mask = here/arguments.head_mask.name
@@ -46,7 +46,7 @@ def main():
         head_mask = head_mask.parent/(head_mask.name+".gz")
     
     try:
-        shutil.copy(str(arguments.brain_mask), here)
+        shutil.copy(str(arguments.brain_mask), str(here))
     except shutil.SameFileError:
         pass
     brain_mask = here/arguments.brain_mask.name
@@ -56,7 +56,7 @@ def main():
     
     # Copy atlasBREX.sh
     try:
-        shutil.copy(atlasBREX_sh, here)
+        shutil.copy(atlasBREX_sh, str(here))
     except shutil.SameFileError:
         pass
     
@@ -68,7 +68,7 @@ def main():
           "-f", arguments.threshold, "-reg", "3", "-w", "1"]
     if arguments.cog:
         command.extend(["-c", arguments.cog])
-    subprocess.check_call(command, cwd=here)
+    subprocess.check_call(command, cwd=str(here))
     
     os.remove(str(here/"atlasBREX.sh"))
     try:
