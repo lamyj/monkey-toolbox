@@ -65,9 +65,9 @@ def main():
           "-h", arguments.input.name, "-nb", head_mask.name, "-b", brain_mask.name,
           # Run atlasBREX with ANTs but without N4 since we are starting with the N4 image
           "-f", arguments.threshold, "-reg", "3", "-w", "1"]
-      if arguments.cog:
-          command.extend(["-c", arguments.cog])
-      subprocess.check_call(command, cwd=here)
+    if arguments.cog:
+        command.extend(["-c", arguments.cog])
+    subprocess.check_call(command, cwd=here)
     
     os.remove(here/"atlasBREX.sh")
     try:
