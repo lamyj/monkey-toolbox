@@ -19,6 +19,11 @@ def main():
         help="Mask (or template) of brain")
     parser.add_argument(
         "-f", "--threshold", required=True, help="BET threshold value")
+    parser.add_argument(
+        "-c", "--cog",
+        help="Center of gravity (voxels not mm) of initial mesh surface, "
+            "if unspecified, use robust brain centre estimation")
+    
     arguments = parser.parse_args()
     
     try:
@@ -55,12 +60,14 @@ def main():
     except shutil.SameFileError:
         pass
     
-    subprocess.check_call([
-        "bash", "atlasBREX.sh", 
-        "-h", arguments.input.name, "-nb", head_mask.name, "-b", brain_mask.name,
-        # Run atlasBREX with ANTs but without N4 since we are starting with the N4 image
-        "-f", arguments.threshold, "-reg", "3", "-w", "1"],
-        cwd=here)
+    command = [
+          "bash", "atlasBREX.sh", 
+          "-h", arguments.input.name, "-nb", head_mask.name, "-b", brain_mask.name,
+          # Run atlasBREX with ANTs but without N4 since we are starting with the N4 image
+          "-f", arguments.threshold, "-reg", "3", "-w", "1"]
+      if arguments.cog:
+          command.extend(["-c", arguments.cog])
+      subprocess.check_call(command, cwd=here)
     
     os.remove(here/"atlasBREX.sh")
     try:

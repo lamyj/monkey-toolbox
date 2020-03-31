@@ -11,7 +11,17 @@ def main():
     parser.add_argument(
         "-f", "--threshold", 
         action="append", default=[], help="BET threshold value")
+    parser.add_argument(
+        "-c", "--cog",
+        help="Center of gravity (voxels not mm) of initial mesh surface, "
+            "if unspecified, use robust brain centre estimation")
     arguments = parser.parse_args()
+    
+    if arguments.cog:
+        x,y,z = arguments.cog.split(",")
+        arguments.cog = ["-c", x, y, z]
+    else:
+        arguments.cog = ["-R"]
     
     if not os.path.isfile("N4.nii.gz"):
         print("Running N4BiasFieldCorrection...")
@@ -22,7 +32,7 @@ def main():
         print(f"Running BET with threshold {value}...")
         subprocess.check_call([
             "bet", "N4.nii.gz", f"bet_{value}", 
-            "-f", value, "-R", "-g", "0", "-m"])
+            "-f", value, "-g", "0", "-m"]+arguments.cog)
     processes = []
     for value in arguments.threshold:
         process = subprocess.Popen([
