@@ -31,20 +31,21 @@ def main():
     for value in arguments.threshold:
         print(f"Running BET with threshold {value}...")
         subprocess.check_call([
-            "bet", "N4.nii.gz", f"bet_{value}", 
+            "bet", "N4.nii.gz", "bet_{}".format(value), 
             "-f", value, "-g", "0", "-m"]+arguments.cog)
     processes = []
     for value in arguments.threshold:
         process = subprocess.Popen([
-            "itksnap", "-g", "N4.nii.gz", "-s", f"bet_{value}_mask.nii.gz"])
+            "itksnap", 
+            "-g", "N4.nii.gz", "-s", "bet_{}_mask.nii.gz".format(value)])
         processes.append(process)
     
     for process in processes:
         process.communicate()
     
     for value in arguments.threshold:
-        os.remove(f"bet_{value}.nii.gz")
-        os.remove(f"bet_{value}_mask.nii.gz")
+        os.remove("bet_{}.nii.gz".format(value))
+        os.remove("bet_{}_mask.nii.gz".format(value))
 
 if __name__ == "__main__":
     sys.exit(main())

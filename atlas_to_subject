@@ -28,8 +28,8 @@ def main():
     subprocess.check_call([
         "antsApplyTransforms", "-d", "3",
         "-i", arguments.labels, "-r", arguments.subject,
-        "-t", f"{arguments.prefix}1Warp.nii.gz", 
-        "-t", f"{arguments.prefix}0GenericAffine.mat", 
+        "-t", "{}1Warp.nii.gz".format(arguments.prefix), 
+        "-t", "{}0GenericAffine.mat".format(arguments.prefix), 
         "-n", "NearestNeighbor",
         "-o", arguments.prefix+"_labels.nii.gz"])
     

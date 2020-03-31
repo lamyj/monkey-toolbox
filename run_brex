@@ -73,11 +73,11 @@ def main():
     try:
         os.remove(str(head_mask))
     except Exception as e:
-        print(f"Could not remove {head_mask}: {e}")
+        print("Could not remove {}: {}".format(head_mask, e))
     try:
         os.remove(str(brain_mask))
     except Exception as e:
-        print(f"Could not remove {brain_mask}: {e}")
+        print("Could not remove {}: {}".format(brain_mask, e))
     
 if __name__ == "__main__":
     sys.exit(main())
