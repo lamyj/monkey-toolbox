@@ -37,21 +37,21 @@ def main():
     
     # Copy masks, gzip if necessary
     try:
-        shutil.copy(arguments.head_mask, here)
+        shutil.copy(str(arguments.head_mask), here)
     except shutil.SameFileError:
         pass
     head_mask = here/arguments.head_mask.name
     if not str(head_mask).endswith(".gz"):
-        subprocess.check_call(["gzip", "-f", head_mask])
+        subprocess.check_call(["gzip", "-f", str(head_mask)])
         head_mask = head_mask.parent/(head_mask.name+".gz")
     
     try:
-        shutil.copy(arguments.brain_mask, here)
+        shutil.copy(str(arguments.brain_mask), here)
     except shutil.SameFileError:
         pass
     brain_mask = here/arguments.brain_mask.name
     if not str(brain_mask).endswith(".gz"):
-        subprocess.check_call(["gzip", "-f", brain_mask])
+        subprocess.check_call(["gzip", "-f", str(brain_mask)])
         brain_mask = brain_mask.parent/(brain_mask.name+".gz")
     
     # Copy atlasBREX.sh
@@ -62,14 +62,15 @@ def main():
     
     command = [
           "bash", "atlasBREX.sh", 
-          "-h", arguments.input.name, "-nb", head_mask.name, "-b", brain_mask.name,
+          "-h", str(arguments.input.name), 
+          "-nb", str(head_mask.name), "-b", str(brain_mask.name),
           # Run atlasBREX with ANTs but without N4 since we are starting with the N4 image
           "-f", arguments.threshold, "-reg", "3", "-w", "1"]
     if arguments.cog:
         command.extend(["-c", arguments.cog])
     subprocess.check_call(command, cwd=here)
     
-    os.remove(here/"atlasBREX.sh")
+    os.remove(str(here/"atlasBREX.sh"))
     try:
         os.remove(str(head_mask))
     except Exception as e:
