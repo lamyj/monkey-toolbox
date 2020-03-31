@@ -9,7 +9,8 @@ def main():
     parser = argparse.ArgumentParser(description="Determine best BET threshold on image")
     parser.add_argument("input", help="Input image")
     parser.add_argument(
-        "-f", action="append", default=[], help="BET threshold value")
+        "-f", "--threshold", 
+        action="append", default=[], help="BET threshold value")
     arguments = parser.parse_args()
     
     if not os.path.isfile("N4.nii.gz"):
@@ -17,13 +18,13 @@ def main():
         subprocess.check_call([
             "N4BiasFieldCorrection", "-i", arguments.input, "-o", "N4.nii.gz"])
     
-    for value in arguments.f:
+    for value in arguments.threshold:
         print(f"Running BET with threshold {value}...")
         subprocess.check_call([
             "bet", "N4.nii.gz", f"bet_{value}", 
             "-f", value, "-R", "-g", "0", "-m"])
     processes = []
-    for value in arguments.f:
+    for value in arguments.threshold:
         process = subprocess.Popen([
             "itksnap", "-g", "N4.nii.gz", "-s", f"bet_{value}_mask.nii.gz"])
         processes.append(process)
@@ -31,7 +32,7 @@ def main():
     for process in processes:
         process.communicate()
     
-    for value in arguments.f:
+    for value in arguments.threshold:
         os.remove(f"bet_{value}.nii.gz")
         os.remove(f"bet_{value}_mask.nii.gz")
 

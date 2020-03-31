@@ -18,7 +18,7 @@ def main():
         "brain_mask", type=pathlib.Path, 
         help="Mask (or template) of brain")
     parser.add_argument(
-        "-f", required=True, help="BET threshold value")
+        "-f", "--threshold", required=True, help="BET threshold value")
     arguments = parser.parse_args()
     
     try:
@@ -50,7 +50,7 @@ def main():
         "bash", "atlasBREX.sh", 
         "-h", arguments.input.name, "-nb", head_mask.name, "-b", brain_mask.name,
         # Run atlasBREX with ANTs but without N4 since we are starting with the N4 image
-        "-f", arguments.f, "-reg", "3", "-w", "1"],
+        "-f", arguments.threshold, "-reg", "3", "-w", "1"],
         cwd=here)
     
     os.remove(here/"atlasBREX.sh")
