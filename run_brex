@@ -31,20 +31,29 @@ def main():
     here = arguments.input.parent
     
     # Copy masks, gzip if necessary
-    shutil.copy(arguments.head_mask, here)
+    try:
+        shutil.copy(arguments.head_mask, here)
+    except shutil.SameFileError:
+        pass
     head_mask = here/arguments.head_mask.name
     if not str(head_mask).endswith(".gz"):
         subprocess.check_call(["gzip", "-f", head_mask])
         head_mask = head_mask.parent/(head_mask.name+".gz")
     
-    shutil.copy(arguments.brain_mask, here)
+    try:
+        shutil.copy(arguments.brain_mask, here)
+    except shutil.SameFileError:
+        pass
     brain_mask = here/arguments.brain_mask.name
     if not str(brain_mask).endswith(".gz"):
         subprocess.check_call(["gzip", "-f", brain_mask])
         brain_mask = brain_mask.parent/(brain_mask.name+".gz")
     
     # Copy atlasBREX.sh
-    shutil.copy(atlasBREX_sh, here)
+    try:
+        shutil.copy(atlasBREX_sh, here)
+    except shutil.SameFileError:
+        pass
     
     subprocess.check_call([
         "bash", "atlasBREX.sh", 
