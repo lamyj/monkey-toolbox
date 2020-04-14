@@ -5,6 +5,8 @@ import os
 import subprocess
 import sys
 
+import bet
+
 def main():
     parser = argparse.ArgumentParser(description="Determine best BET threshold on image")
     parser.add_argument("input", help="Input image")
@@ -18,21 +20,20 @@ def main():
     arguments = parser.parse_args()
     
     if arguments.cog:
-        x,y,z = arguments.cog.split(",")
-        arguments.cog = ["-c", x, y, z]
-    else:
-        arguments.cog = ["-R"]
+        arguments.cog = [float(x) for x in arguments.cog.split(",")]
     
     if not os.path.isfile("N4.nii.gz"):
         print("Running N4BiasFieldCorrection...")
         subprocess.check_call([
             "N4BiasFieldCorrection", "-i", arguments.input, "-o", "N4.nii.gz"])
     
-    for value in arguments.threshold:
-        print(f"Running BET with threshold {value}...")
-        subprocess.check_call([
-            "bet", "N4.nii.gz", "bet_{}".format(value), 
-            "-f", value, "-g", "0", "-m"]+arguments.cog)
+    for threshold in arguments.threshold:
+        print("Running BET with threshold {}...".format(threshold))
+        
+        output = "bet_{}.nii.gz".format(threshold)
+        bet.adjust_voxel_size("N4.nii.gz", output)
+        bet.bet(output, output, True, threshold, arguments.cog)
+        bet.restore_voxel_size(output, "N4.nii.gz")
     processes = []
     for value in arguments.threshold:
         process = subprocess.Popen([
