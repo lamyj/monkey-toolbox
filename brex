@@ -1,0 +1,169 @@
+#!/usr/bin/env python3
+
+import argparse
+import itertools
+import os
+import re
+import shlex
+import subprocess
+import sys
+import tempfile
+
+import doit
+import nibabel
+import numpy
+import shutil
+import spire
+import spire.ants
+
+import bet
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("subject")
+    parser.add_argument("full_template")
+    parser.add_argument("brain_template")
+    parser.add_argument("destination_directory")
+    parser.add_argument(
+        "-f", "--threshold", type=float, default=0.5,
+        help="fractional intensity threshold (0->1); default=0.5; "
+            "smaller values give larger brain outline estimates")
+    parser.add_argument(
+        "-c", "--cog", default=None,
+        help="Center of gravity (voxels not mm) of initial mesh surface, "
+            "if unspecified, use robust brain centre estimation")
+    parser.add_argument(
+        "-k", "--keep", action="store_true",
+        help="Keep intermediate files")
+
+    arguments = parser.parse_args()
+    
+    paths = [
+        "subject", "full_template", "brain_template", "destination_directory"]
+    for path in paths:
+        setattr(arguments, path, os.path.abspath(getattr(arguments, path)))
+    
+    if arguments.cog:
+        arguments.cog = [int(x) for x in arguments.cog.split(",")]
+    
+    if not os.path.isdir(arguments.destination_directory):
+        os.makedirs(arguments.destination_directory)
+    
+    old_wd = os.getcwd()
+    working_directory = tempfile.mkdtemp(
+        prefix="brex.", dir=arguments.destination_directory)
+    os.chdir(working_directory)
+    try:
+        # Initial approximate brain extraction, with adjustment of voxel size
+        # to resemble the human brain.
+        bet = BET(
+            arguments.subject, "initial_segmentation.nii.gz", 
+            True, arguments.threshold, arguments.cog)
+        
+        # Registration of template mask to subject using linear registration 
+        # between the template brain and the initial approximate brain 
+        # extraction.
+        template_to_subject_affine = spire.ants.Registration(
+            bet.targets[0], arguments.brain_template, "affine",
+            "template_to_subject_affine", precision="float")
+        
+        # Dilate the reference mask based on the result from rigid deformation, 
+        # which prevents adverse impact of surrounding extracranial tissue at 
+        # full resolution during registration
+        dilated_brain_template = DilateBrainTemplate(
+            template_to_subject_affine.targets[-2], 
+            "dilated_template_brain_mask.nii.gz", 5, 
+            template_to_subject_affine.transforms[0], arguments.full_template)
+        
+        # Non-linear registration between the dilated brain template and the 
+        # initial approximate brain extraction, starting with the linear 
+        # transform.
+        template_to_subject_nonlinear = spire.ants.Registration(
+            bet.targets[0], dilated_brain_template.targets[0], "syn", 
+            "template_to_subject_non_linear", precision="float",
+            initial_transforms=template_to_subject_affine.transforms)
+        
+        # Final segmentation: transform brain template to subject space and use
+        # it as a binary mask
+        brain_template_in_subject = spire.ants.ApplyTransforms(
+            arguments.brain_template, arguments.subject,
+            template_to_subject_nonlinear.transforms,
+            "brain_template_in_subject.nii.gz", "NearestNeighbor")
+        final_segmentation = [
+            (binary_mask, (
+                brain_template_in_subject.targets[0], 
+                "final_segmentation.nii.gz"))]
+        
+        actions = itertools.chain(
+            bet.actions, 
+            template_to_subject_affine.actions, 
+            dilated_brain_template.actions,
+            template_to_subject_nonlinear.actions,
+            brain_template_in_subject.actions,
+            final_segmentation
+        )
+        for action in actions:
+            if isinstance(action[0], str):
+                subprocess.check_call(action)
+            else:
+                action[0](*action[1])
+        
+        targets = brain_template_in_subject.targets + [
+            "final_segmentation.nii.gz"]
+        for target in targets:
+            shutil.copy(target, arguments.destination_directory)
+    finally:
+        os.chdir(old_wd)
+        if not arguments.keep:
+            shutil.rmtree(working_directory)
+
+class BET(spire.TaskFactory):
+    def __init__(
+            self, input, output, 
+            write_mask=False, threshold=0.5, cog=None):
+        spire.TaskFactory.__init__(self, "BET")
+        self.file_dep = [input]
+        
+        self.targets = [output]
+        if write_mask:
+            self.targets.append(
+                re.sub(r"^(.*)(.nii(?:.gz)?)", r"\1_mask\2", output))
+        
+        self.actions = [
+            (bet.adjust_voxel_size, (input, output)), 
+            (bet.bet, (input, output, write_mask, threshold, cog)), 
+            (bet.restore_voxel_size, (output, input))]
+
+def binary_mask(input, output):
+    """ Create a binary mask from input image, where the object is defined as
+        all voxels > 0.
+    """
+    
+    image = nibabel.load(input)
+    data = image.get_data()
+    data[data>0] = 1
+    data[data<=0] = 0
+    nibabel.save(
+        nibabel.Nifti1Image(data.astype(numpy.uint8), image.affine), output)
+
+class DilateBrainTemplate(spire.TaskFactory):
+    """ Dilate the input (in subject space), then transform it to template 
+        space.
+    """
+    
+    def __init__(self, input, output, radius, transform, reference):
+        spire.TaskFactory.__init__(self, output)
+        
+        self.file_dep = [input]
+        self.targets = [output]
+        
+        mask_subject = (binary_mask, (input, output))
+        dilation = ["ImageMath", "3", output, "MD", output, str(radius)]
+        transform = spire.ants.ApplyTransforms(
+                output, reference, [[transform, 1]], output, "NearestNeighbor")
+        mask_template = [
+            "ImageMath", "3", output, "m", reference, output]
+        self.actions = [mask_subject, dilation]+transform.actions+[mask_template]
+
+if __name__ == "__main__":
+    sys.exit(main())
