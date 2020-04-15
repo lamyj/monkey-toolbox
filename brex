@@ -108,10 +108,10 @@ def main():
             else:
                 action[0](*action[1])
         
-        targets = brain_template_in_subject.targets + [
+        results = template_to_subject_nonlinear.transforms + [
             "final_segmentation.nii.gz"]
-        for target in targets:
-            shutil.copy(target, arguments.destination_directory)
+        for result in results:
+            shutil.copy(result, arguments.destination_directory)
     finally:
         os.chdir(old_wd)
         if not arguments.keep:
