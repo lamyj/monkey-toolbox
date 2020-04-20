@@ -10,28 +10,43 @@ import pandas
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Non-linear registration of an atlas (template+labels) to subject space")
+        description="Transport atlas labels to subject space "
+            "and create a volumetry report")
     parser.add_argument("subject", help="Subject image")
-    parser.add_argument("atlas", help="Template image of atlas")
+    parser.add_argument(
+        "reference", help="Template image of atlas or transform")
     parser.add_argument("labels", help="Label image of atlas")
     parser.add_argument("dictionary", help="Names of the labels")
     parser.add_argument("prefix", help="Prefix of output files")
     parser.add_argument("volumes", help="Path to the volumes file")
     arguments = parser.parse_args()
     
-    subprocess.check_call([
-        "antsRegistrationSyN.sh", "-d", "3", "-p", "f",
-        "-n", subprocess.check_output("nproc").strip(),
-        "-f", arguments.subject, "-m", arguments.atlas, 
-        "-t", "s", "-o", arguments.prefix])
+    # Transform files suffixes, in the order they should be fed to 
+    # antsApplyTransforms
+    suffixes = ["1Warp.nii.gz", "0GenericAffine.mat"]
+    
+    is_transform = any(arguments.reference.endswith(x) for x in suffixes)
+    
+    if is_transform:
+        if arguments.reference.endswith("0GenericAffine.mat"):
+            stem = arguments.reference[:-len("0GenericAffine.mat")]
+        else:
+            stem = arguments.reference[:-len("1Warp.nii.gz")]
+        transforms = ["{}{}".format(stem, x for x in suffixes)]
+    else:
+        subprocess.check_call([
+            "antsRegistrationSyN.sh", "-d", "3", "-p", "f",
+            "-n", subprocess.check_output("nproc").strip(),
+            "-f", arguments.subject, "-m", arguments.reference, 
+            "-t", "s", "-o", arguments.prefix])
+        transforms = ["{}{}".format(arguments.prefix, x for x in suffixes)]
     
     subprocess.check_call([
         "antsApplyTransforms", "-d", "3",
         "-i", arguments.labels, "-r", arguments.subject,
-        "-t", "{}1Warp.nii.gz".format(arguments.prefix), 
-        "-t", "{}0GenericAffine.mat".format(arguments.prefix), 
         "-n", "NearestNeighbor",
-        "-o", arguments.prefix+"_labels.nii.gz"])
+        "-o", arguments.prefix+"_labels.nii.gz"]
+        + ["-t", transforms[0], "-t", transforms[1]])
     
     dictionary = pandas.read_csv(
         arguments.dictionary, names=["label", "name", "r", "g", "b", "a"], sep=" ")
