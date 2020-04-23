@@ -33,6 +33,9 @@ def main():
         help="Center of gravity (voxels not mm) of initial mesh surface, "
             "if unspecified, use robust brain centre estimation")
     parser.add_argument(
+        "-d", "--dilation", type=int, default=0, 
+        help="Dilation radius, defaults to 0")
+    parser.add_argument(
         "-k", "--keep", action="store_true",
         help="Keep intermediate files")
 
@@ -70,16 +73,21 @@ def main():
         # Dilate the reference mask based on the result from rigid deformation, 
         # which prevents adverse impact of surrounding extracranial tissue at 
         # full resolution during registration
-        dilated_brain_template = DilateBrainTemplate(
-            template_to_subject_affine.targets[-2], 
-            "dilated_template_brain_mask.nii.gz", 5, 
-            template_to_subject_affine.transforms[0], arguments.full_template)
+        if arguments.dilation:
+            dilated_brain_template = DilateBrainTemplate(
+                template_to_subject_affine.targets[-2], 
+                "dilated_template_brain_mask.nii.gz", arguments.dilation, 
+                template_to_subject_affine.transforms[0], 
+                arguments.full_template)
         
         # Non-linear registration between the dilated brain template and the 
         # initial approximate brain extraction, starting with the linear 
         # transform.
         template_to_subject_nonlinear = spire.ants.Registration(
-            bet.targets[0], dilated_brain_template.targets[0], "syn", 
+            bet.targets[0], 
+            dilated_brain_template.targets[0] 
+                if arguments.dilation else arguments.brain_template, 
+            "syn", 
             "template_to_subject_non_linear", precision="float",
             initial_transforms=template_to_subject_affine.transforms)
         
@@ -97,7 +105,7 @@ def main():
         actions = itertools.chain(
             bet.actions, 
             template_to_subject_affine.actions, 
-            dilated_brain_template.actions,
+            dilated_brain_template.actions if arguments.dilation else [],
             template_to_subject_nonlinear.actions,
             brain_template_in_subject.actions,
             final_segmentation
@@ -109,7 +117,7 @@ def main():
                 action[0](*action[1])
         
         results = template_to_subject_nonlinear.transforms + [
-            "final_segmentation.nii.gz"]
+            "brain_template_in_subject.nii.gz", "final_segmentation.nii.gz"]
         for result in results:
             shutil.copy(result, arguments.destination_directory)
     finally:
