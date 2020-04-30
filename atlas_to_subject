@@ -39,7 +39,7 @@ def main():
             "-n", subprocess.check_output("nproc").strip(),
             "-f", arguments.subject, "-m", arguments.reference, 
             "-t", "s", "-o", arguments.prefix])
-        transforms = ["{}{}".format(arguments.prefix) x for x in suffixes]
+        transforms = ["{}{}".format(arguments.prefix, x) for x in suffixes]
     
     subprocess.check_call([
         "antsApplyTransforms", "-d", "3",
