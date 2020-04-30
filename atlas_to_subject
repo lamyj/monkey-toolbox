@@ -32,14 +32,14 @@ def main():
             stem = arguments.reference[:-len("0GenericAffine.mat")]
         else:
             stem = arguments.reference[:-len("1Warp.nii.gz")]
-        transforms = ["{}{}".format(stem, x for x in suffixes)]
+        transforms = ["{}{}".format(stem, x) for x in suffixes]
     else:
         subprocess.check_call([
             "antsRegistrationSyN.sh", "-d", "3", "-p", "f",
             "-n", subprocess.check_output("nproc").strip(),
             "-f", arguments.subject, "-m", arguments.reference, 
             "-t", "s", "-o", arguments.prefix])
-        transforms = ["{}{}".format(arguments.prefix, x for x in suffixes)]
+        transforms = ["{}{}".format(arguments.prefix) x for x in suffixes]
     
     subprocess.check_call([
         "antsApplyTransforms", "-d", "3",
