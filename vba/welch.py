@@ -34,13 +34,8 @@ def main():
     parser.add_argument(
         "--mask", 
         help="Path to mask image (only non-zero voxels will be processed)")
-    parser.add_argument(
-        "--jobs", "-j", type=int, help="Number of jobs to run simultaneously")
     
     arguments = parser.parse_args()
-    
-    if arguments.jobs is None:
-        arguments.jobs = count_physical_cores()
     
     try:
         arguments.table = pandas.read_excel(arguments.table)
@@ -68,9 +63,9 @@ def main():
     
     arguments = vars(arguments)
     del arguments["root"]
-    estimate(**arguments)
+    welch(**arguments)
 
-def estimate(table, group, t_path, p_path, z_path, mask, jobs):
+def welch(table, group, t_path, p_path, z_path, mask):
     # Load and transpose the image data so that the resulting 4D array is a
     # vector image.
     images = [nibabel.load(x) for x in table["Image"]]
