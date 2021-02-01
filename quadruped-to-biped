@@ -1,0 +1,42 @@
+#!/usr/bin/env python3
+
+import argparse
+import sys
+
+import nibabel
+import numpy
+
+import transform_image
+
+def main():
+    """
+    The standard orientation defined by DICOM (PS 3.3, C.7.6.2.1.1) for imaging 
+    bipeds and the head of quadrupeds is:
+
+    | Axis   | Biped                | Quadruped (head) |
+    | ------ | -------------------- | ---------------- |
+    | x-axis | right → left         | right → left     |
+    | y-axis | anterior → posterior | ventral → dorsal |
+    | z-axis | feet → head          | caudal → rostral |
+    """
+    
+    parser = argparse.ArgumentParser(
+        description="Reorient data so that quadruped-oriented samples are "
+            "set to biped orientation")
+    parser.add_argument("source")
+    parser.add_argument("destination")
+    arguments = parser.parse_args()
+    
+    source = nibabel.load(arguments.source)
+
+    # Mismatch between quadruped and biped orientations means rotating 90°
+    # around the R→L axis in LPS space, or conversely rotating -90° around
+    # the L→L axis in RAS space.
+    transform = transform_image.axis_angle_to_matrix([1, 0, 0], -numpy.pi/2)
+    
+    destination = nibabel.Nifti1Image(
+        source.dataobj, transform_image.transform_matrix(source, transform))
+    nibabel.save(destination, arguments.destination)
+
+if __name__ == "__main__":
+    sys.exit(main())

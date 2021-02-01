@@ -23,7 +23,7 @@ def transform_matrix(source, transform):
     
     return affine
 
-def axis_angle_to_matrix(axis, angle) :
+def axis_angle_to_matrix(axis, angle):
     r""" Convert an (axis, angle) to a rotation matrix.
     
          This formula comes from Rodrigues' rotation formula,

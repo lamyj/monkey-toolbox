@@ -1,0 +1,30 @@
+#!/usr/bin/env python3
+
+import argparse
+import sys
+
+import nibabel
+import numpy
+
+import transform_image
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Reorient data where the sample was placed "
+        "feet-first-prone, but head-first-supine was specified on the scanner")
+    parser.add_argument("source")
+    parser.add_argument("destination")
+    arguments = parser.parse_args()
+
+    source = nibabel.load(arguments.source)
+
+    # Mismatch between HFP and FFS means rotating around the LR axis by an angle
+    # of 180°
+    transform = transform_image.axis_angle_to_matrix([1,0,0], numpy.pi)
+    
+    destination = nibabel.Nifti1Image(
+        source.dataobj, transform_image.transform_matrix(source, transform))
+    nibabel.save(destination, arguments.destination)
+
+if __name__ == "__main__":
+    sys.exit(main())
