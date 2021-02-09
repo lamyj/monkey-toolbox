@@ -1,0 +1,66 @@
+#!/usr/bin/env python3
+
+import argparse
+import itertools
+import pathlib
+import sys
+
+import itk
+import numpy
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Apply a transform while conserving the orientation")
+    parser.add_argument("source")
+    parser.add_argument("transform")
+    parser.add_argument("destination")
+    arguments = parser.parse_args()
+
+    image = itk.imread(str(arguments.source))
+    
+    transform = load_transform(arguments.transform)
+    inverse_transform = itk.down_cast(transform.CreateAnother())
+    transform.GetInverse(inverse_transform)
+    
+    region = image.GetLargestPossibleRegion()
+    bounding_box = region.GetIndex(), region.GetIndex()+region.GetSize()
+    transformed_corners = []
+    for corner_index in itertools.product(*zip(*bounding_box)):
+        corner_point = image.TransformIndexToPhysicalPoint(corner_index)
+        # Coordinates -> inverse transform
+        transformed_corner_point = inverse_transform.TransformPoint(corner_point)
+        transformed_corner_index = image.TransformPhysicalPointToContinuousIndex(
+            transformed_corner_point)
+        transformed_corners.append(transformed_corner_index)
+
+    origin = image.TransformContinuousIndexToPhysicalPoint(
+        itk.ContinuousIndex[itk.D,3](numpy.min(transformed_corners, axis=0)))
+    size = numpy.ceil(
+        numpy.max(transformed_corners, axis=0) 
+        - numpy.min(transformed_corners, axis=0)).astype(int)
+
+    resampled = itk.resample_image_filter(
+        image, 
+        size=size.tolist(),
+        output_origin=origin, 
+        output_spacing=image.GetSpacing(), output_direction=image.GetDirection(),
+        transform=transform, default_pixel_value=0)
+
+    itk.imwrite(resampled, str(arguments.destination))
+
+def load_transform(path):
+    transform_reader = itk.TransformFileReaderTemplate.New(FileName=str(path))
+    transform_reader.Update()
+    transforms = transform_reader.GetTransformList()
+    if len(transforms) == 1:
+        transform = itk.down_cast(transforms[0])
+    else:
+        template_parameters = itk.template(itk.down_cast(transforms[0]))[1]
+        transform = itk.CompositeTransform[template_parameters].New()
+        for i in range(len(transforms)):
+            transform.AppendTransform(itk.down_cast(transforms[i]))
+    
+    return transform
+
+if __name__ == "__main__":
+    sys.exit(main())
