@@ -1,3 +1,5 @@
+import re
+
 import spire
 
 class Reorient(spire.TaskFactory):
@@ -11,7 +13,7 @@ class Reorient(spire.TaskFactory):
             self.actions.append(
                 ["same-grid-transform", source, image_transform, target])
         else:
-            self.actions.append(["cp", source, image_transform, target])
+            self.actions.append(["cp", source, target])
         self.actions.extend([[x, target, target] for x in grid_transforms])
 
 class BiasCorrection(spire.TaskFactory):
