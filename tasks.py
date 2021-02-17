@@ -51,8 +51,7 @@ class SymmetricSubjectTemplate(spire.TaskFactory):
             
             f"{prefix}template0.nii.gz",
             f"{prefix}template0GenericAffine.mat",
-            f"{prefix}template0warp.nii.gz",
-            f"{prefix}templatewarplog.txt",
+            f"{prefix}template0warp.nii.gz"
         ]
         
         # WARNING: ITK_GLOBAL_NUMBER_OF_THREADS is not re-exported by the Slurm
@@ -62,4 +61,5 @@ class SymmetricSubjectTemplate(spire.TaskFactory):
             [
                 "antsMultivariateTemplateConstruction2.sh",
                 "-d", "3", "-r", "1", "-n", "0",
-                "-o", prefix, original, mirrored]]
+                "-o", prefix, original, mirrored],
+            ["rm", f"{prefix}templatewarplog.txt"]]
