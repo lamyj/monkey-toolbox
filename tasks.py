@@ -64,3 +64,21 @@ class SymmetricSubjectTemplate(spire.TaskFactory):
                 "-d", "3", "-r", "1", "-n", "0",
                 "-o", prefix, original, mirrored],
             ["rm", f"{prefix}templatewarplog.txt"]]
+
+class JacobianDeterminant(spire.TaskFactory):
+    def __init__(self, source, target, log=False, geometric=False):
+        spire.TaskFactory.__init__(self, str(target))
+        self.file_dep = [source]
+        self.targets = [target]
+        self.actions = [
+            [
+                "CreateJacobianDeterminantImage", "3",
+                source, target, str(int(log)), str(int(geometric))
+            ]]
+
+class Subtract(spire.TaskFactory):
+    def __init__(self, lhs, rhs, target):
+        spire.TaskFactory.__init__(self, str(target))
+        self.file_dep = [lhs, rhs]
+        self.targets = [target]
+        self.actions = [["ImageMath", "3", target, "-", lhs, rhs]]
