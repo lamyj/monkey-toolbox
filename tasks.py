@@ -1,3 +1,4 @@
+import os
 import re
 
 import spire
@@ -35,8 +36,8 @@ class SymmetricSubjectTemplate(spire.TaskFactory):
         spire.TaskFactory.__init__(self, str(prefix))
         self.file_dep = [original, mirrored]
         
-        original_stem = re.sub(r'.nii(?:.gz)?', '', original.name)
-        mirrored_stem = re.sub(r'.nii(?:.gz)?', '', mirrored.name)
+        original_stem = re.sub(r'.nii(?:.gz)?', '', os.path.basename(original))
+        mirrored_stem = re.sub(r'.nii(?:.gz)?', '', os.path.basename(mirrored))
         
         self.targets = [
             f"{prefix}{original_stem}00GenericAffine.mat",
