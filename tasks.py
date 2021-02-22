@@ -37,23 +37,25 @@ class SymmetricSubjectTemplate(spire.TaskFactory):
         spire.TaskFactory.__init__(self, str(prefix))
         self.file_dep = [original, mirrored]
         
-        original_stem = re.sub(r'.nii(?:.gz)?', '', os.path.basename(original))
-        mirrored_stem = re.sub(r'.nii(?:.gz)?', '', os.path.basename(mirrored))
+        original_stem = re.sub(
+            r".nii(?:.gz)?", "", os.path.basename(str(original)))
+        mirrored_stem = re.sub(
+            r".nii(?:.gz)?", "", os.path.basename(str(mirrored)))
         
         self.targets = [
-            f"{prefix}{original_stem}00GenericAffine.mat",
-            f"{prefix}{original_stem}01Warp.nii.gz",
-            f"{prefix}{original_stem}01InverseWarp.nii.gz",
-            f"{prefix}template0{original_stem}0WarpedToTemplate.nii.gz",
+            "{}{}00GenericAffine.mat".format(prefix, original_stem),
+            "{}{}01Warp.nii.gz".format(prefix, original_stem),
+            "{}{}01InverseWarp.nii.gz".format(prefix, original_stem),
+            "{}template0{}0WarpedToTemplate.nii.gz".format(prefix, original_stem),
             
-            f"{prefix}{mirrored_stem}10GenericAffine.mat",
-            f"{prefix}{mirrored_stem}11Warp.nii.gz",
-            f"{prefix}{mirrored_stem}11InverseWarp.nii.gz",
-            f"{prefix}template0{mirrored_stem}1WarpedToTemplate.nii.gz",
+            "{}{}10GenericAffine.mat".format(prefix, mirrored_stem),
+            "{}{}11Warp.nii.gz".format(prefix, mirrored_stem),
+            "{}{}11InverseWarp.nii.gz".format(prefix, mirrored_stem),
+            "{}template0{}1WarpedToTemplate.nii.gz".format(prefix, mirrored_stem),
             
-            f"{prefix}template0.nii.gz",
-            f"{prefix}template0GenericAffine.mat",
-            f"{prefix}template0warp.nii.gz"
+            "{}template0.nii.gz".format(prefix),
+            "{}template0GenericAffine.mat".format(prefix),
+            "{}template0warp.nii.gz".format(prefix)
         ]
         
         # WARNING: ITK_GLOBAL_NUMBER_OF_THREADS is not re-exported by the Slurm
@@ -64,7 +66,7 @@ class SymmetricSubjectTemplate(spire.TaskFactory):
                 "antsMultivariateTemplateConstruction2.sh",
                 "-d", "3", "-r", "1", "-n", "0",
                 "-o", prefix, original, mirrored],
-            ["rm", f"{prefix}templatewarplog.txt"]]
+            ["rm", "{}templatewarplog.txt".format(prefix)]]
 
 class JacobianDeterminant(spire.TaskFactory):
     def __init__(self, source, target, log=False, geometric=False):
