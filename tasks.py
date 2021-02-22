@@ -85,3 +85,34 @@ class Subtract(spire.TaskFactory):
         self.file_dep = [lhs, rhs]
         self.targets = [target]
         self.actions = [["ImageMath", "3", target, "-", lhs, rhs]]
+
+class SymmetricCohortTemplateSlurm(spire.TaskFactory):
+    def __init__(self, sources, initial_template, prefix):
+        spire.TaskFactory.__init__(self, str(prefix))
+        self.file_dep = sources+[initial_template]
+        
+        self.targets = []
+        for i, source in enumerate(sources):
+            stem = re.sub(r'.nii(?:.gz)?', '', os.path.basename(source))
+            self.targets.extend([
+                "{}{}{}0GenericAffine.mat".format(prefix, stem, i),
+                "{}{}{}1Warp.nii.gz".format(prefix, stem, i),
+                "{}{}{}1InverseWarp.nii.gz".format(prefix, stem, i),
+                "{}template0{}{}WarpedToTemplate.nii.gz".format(prefix, stem, i)])
+        
+        self.targets.extend([
+            "{}template0.nii.gz".format(prefix),
+            "{}template0GenericAffine.mat".format(prefix),
+            "{}template0warp.nii.gz".format(prefix)
+        ])
+        
+        # WARNING: ITK_GLOBAL_NUMBER_OF_THREADS is not re-exported by the Slurm
+        # scripts, and antsMultivariateTemplateConstruction2.sh removes *all*
+        # slurm-*.out in output dir.
+        self.actions = [
+            [
+                "antsMultivariateTemplateConstruction2.sh",
+                "-d", "3", "-r", "1", "-n", "0", "-z", initial_template,
+                "-c", "5", "-v", "64G",
+                "-o", prefix]+sources,
+            ["rm", "{}templatewarplog.txt".format(prefix)]]
