@@ -1,7 +1,10 @@
+import itertools
 import os
 import re
 
 import spire
+
+import welch
 
 class ManualTransform(spire.TaskFactory):
     def __init__(self, source, grid_transforms, reference, target):
@@ -144,3 +147,11 @@ class SymmetricCohortTemplateSlurm(spire.TaskFactory):
                 "-c", "5", "-v", "64G",
                 "-o", prefix]+sources,
             ["rm", "{}templatewarplog.txt".format(prefix)]]
+
+class WelchTest(spire.TaskFactory):
+    def __init__(self, groups, mask, t_map, p_map):
+        spire.TaskFactory.__init__(self, str(t_map))
+        self.file_dep = list(itertools.chain(*groups, [mask]))
+        
+        self.targets = [t_map, p_map]
+        self.actions = [(welch.test, (groups, mask, t_map, p_map))]
