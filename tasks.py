@@ -3,6 +3,20 @@ import re
 
 import spire
 
+class ManualTransform(spire.TaskFactory):
+    def __init__(self, source, grid_transforms, reference, target):
+        spire.TaskFactory.__init__(self, str(target))
+        self.file_dep = [source, reference]
+        self.targets = [target]
+        self.actions = (
+            [
+                ["echo", "Save transform in", target],
+                ["cp", source, "tmp.nii.gz"]]
+            + [[x, "tmp.nii.gz", "tmp.nii.gz"] for x in grid_transforms]
+            + [
+                ["itksnap", "-g", reference, "-o", "tmp.nii.gz"],
+                ["rm", "tmp.nii.gz"]])
+
 class Reorient(spire.TaskFactory):
     def __init__(self, source, grid_transforms, image_transform, reference, target):
         spire.TaskFactory.__init__(self, str(target))
@@ -85,6 +99,20 @@ class Subtract(spire.TaskFactory):
         self.file_dep = [lhs, rhs]
         self.targets = [target]
         self.actions = [["ImageMath", "3", target, "-", lhs, rhs]]
+
+class MakeLink(spire.TaskFactory):
+    def __init__(self, source, target):
+        spire.TaskFactory.__init__(self, str(target))
+        
+        # NOTE: source is a path relative to target
+        true_source = os.path.relpath(
+            os.path.abspath(os.path.join(os.path.dirname(target), source)))
+        self.file_dep = [true_source]
+        
+        self.targets = [target]
+        self.actions = [
+            ["mkdir", "-p", os.path.dirname(target)],
+            ["ln", "-s", "-f", source, target]]
 
 class SymmetricCohortTemplateSlurm(spire.TaskFactory):
     def __init__(self, sources, initial_template, prefix):
