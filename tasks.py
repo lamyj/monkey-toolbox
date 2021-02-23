@@ -4,6 +4,7 @@ import re
 
 import spire
 
+import clustering
 import welch
 
 class ManualTransform(spire.TaskFactory):
@@ -149,9 +150,29 @@ class SymmetricCohortTemplateSlurm(spire.TaskFactory):
             ["rm", "{}templatewarplog.txt".format(prefix)]]
 
 class WelchTest(spire.TaskFactory):
-    def __init__(self, groups, mask, t_map, p_map):
+    def __init__(self, groups, mask, t_map, p_map, z_map):
         spire.TaskFactory.__init__(self, str(t_map))
         self.file_dep = list(itertools.chain(*groups, [mask]))
         
-        self.targets = [t_map, p_map]
-        self.actions = [(welch.test, (groups, mask, t_map, p_map))]
+        self.targets = [t_map, p_map, z_map]
+        self.actions = [(welch.test, (groups, mask, t_map, p_map, z_map))]
+
+class SizeClustering(spire.TaskFactory):
+    def __init__(self, source, threshold, min_size, target):
+        spire.TaskFactory.__init__(self, str(target))
+        
+        self.file_dep = [source]
+        self.targets = [target]
+        self.actions = [
+            (clustering.by_size, (source, threshold, min_size, target))]
+
+class PValueClustering(spire.TaskFactory):
+    def __init__(self, source, mask, threshold, max_p_value, target):
+        spire.TaskFactory.__init__(self, str(target))
+        
+        self.file_dep = [source]
+        self.targets = [target]
+        self.actions = [
+            (
+                clustering.by_p_value, 
+                (source, mask, threshold, max_p_value, target))]
