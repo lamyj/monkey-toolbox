@@ -3,8 +3,10 @@ import os
 import re
 
 import spire
+import yaml
 
 import clustering
+import clusters_volume_report
 import welch
 
 class ManualTransform(spire.TaskFactory):
@@ -176,3 +178,37 @@ class PValueClustering(spire.TaskFactory):
             (
                 clustering.by_p_value, 
                 (source, mask, threshold, max_p_value, target))]
+
+class D99Labels(spire.TaskFactory):
+    """ Parse the D99 label map to a standard format. """
+    
+    def __init__(self, source, target):
+        spire.TaskFactory.__init__(self, str(target))
+        self.file_dep = [source]
+        self.targets = [target]
+        self.actions = [(D99Labels.parse_labels, (source, target))]
+    
+    @staticmethod
+    def parse_labels(source, target):
+        with open(source) as fd:
+            labels_data = fd.read()
+        labels = {}
+        for line in labels_data.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            number, name = line.split(" ", 1)
+            labels[int(number)] = name
+        with open(target, "w") as fd:
+            yaml.dump(labels, fd)
+
+class ClustersVolumeReport(spire.TaskFactory):
+    def __init__(self, clusters, atlas, labels, report, min_size=None):
+        spire.TaskFactory.__init__(self, str(report))
+        self.file_dep = [clusters, atlas, labels]
+        self.targets = [report]
+        self.actions = [
+            (
+                clusters_volume_report.clusters_volume_report, 
+                (clusters, atlas, labels, report, min_size))
+        ]
