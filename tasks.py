@@ -249,3 +249,17 @@ class ClustersVolumeReport(spire.TaskFactory):
                 clusters_volume_report.clusters_volume_report, 
                 (clusters, atlas, labels, report, min_size))
         ]
+
+class AverageImages(spire.TaskFactory):
+    def __init__(self, sources, target):
+        spire.TaskFactory.__init__(self, str(target))
+        self.file_dep = sources
+        self.targets = [target]
+        self.actions = [
+            (AverageImages.average_images, (sources, target))]
+    
+    @staticmethod
+    def average_images(sources, target):
+        images = [nibabel.load(x) for x in sources]
+        average = numpy.average([x.get_fdata() for x in images], 0)
+        nibabel.save(nibabel.Nifti1Image(average, images[0].affine), target)

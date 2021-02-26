@@ -31,9 +31,11 @@ def build(sources, transforms, reference, mask, social, atlases, Paths):
         [x.targets[0] for x in subject_template_links], reference,
         Paths.cohort_template/"cohort")
 
+    warped_to_cohort = {}
     exam_index = 0
     for index, (exam, exam_pipeline) in enumerate(sorted(exam_pipelines.items())):
         exam_pipeline.cohort_template = cohort_template.targets[-3]
+        warped_to_cohort[exam] = cohort_template.targets[4*exam_index+3]
         exam_pipeline.cohort_transforms = [
             cohort_template.targets[4*exam_index+1],
             cohort_template.targets[4*exam_index]]
@@ -70,3 +72,13 @@ def build(sources, transforms, reference, mask, social, atlases, Paths):
                 Paths.vba/"clusters_t_{}_{}_{}_{}.xlsx".format(
                     threshold, min_cluster_size, min_region_size, atlas_name), 
                 min_size=min_region_size)
+    
+    groups = [
+        sorted([
+            image 
+            for exam, image in warped_to_cohort.items()
+            if social.get(exam) == s])
+        for s in [True, False]
+    ]
+    tasks.AverageImages(groups[0], Paths.vba/"social.nii.gz")
+    tasks.AverageImages(groups[1], Paths.vba/"not_social.nii.gz")
