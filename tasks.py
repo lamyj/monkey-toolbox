@@ -1,3 +1,4 @@
+import csv
 import itertools
 import os
 import re
@@ -199,6 +200,26 @@ class D99Labels(spire.TaskFactory):
                 continue
             number, name = line.split(" ", 1)
             labels[int(number)] = name
+        with open(target, "w") as fd:
+            yaml.dump(labels, fd)
+
+class CHARMLabels(spire.TaskFactory):
+    """ Parse the CHARM/SARM label maps to a standard format. """
+    
+    def __init__(self, source, target):
+        spire.TaskFactory.__init__(self, str(target))
+        self.file_dep = [source]
+        self.targets = [target]
+        self.actions = [(CHARMLabels.parse_labels, (source, target))]
+    
+    @staticmethod
+    def parse_labels(source, target):
+        with open(source) as fd:
+            reader = csv.DictReader(fd, delimiter="\t")
+            labels_data = list(reader)
+        labels = {}
+        for entry in labels_data:
+            labels[int(entry["Index"])] = entry["Full_Name"]
         with open(target, "w") as fd:
             yaml.dump(labels, fd)
 
