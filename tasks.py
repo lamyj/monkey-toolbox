@@ -3,6 +3,8 @@ import itertools
 import os
 import re
 
+import nibabel
+import numpy
 import spire
 import yaml
 
@@ -222,6 +224,20 @@ class CHARMLabels(spire.TaskFactory):
             labels[int(entry["Index"])] = entry["Full_Name"]
         with open(target, "w") as fd:
             yaml.dump(labels, fd)
+
+class CHARMVolume(spire.TaskFactory):
+    def __init__(self, source, volume, target):
+        spire.TaskFactory.__init__(self, str(target))
+        self.file_dep = [source]
+        self.targets = [target]
+        self.actions = [
+            (CHARMVolume.extract_volume, (source, volume, target))]
+    
+    @staticmethod
+    def extract_volume(source, volume, target):
+        image = nibabel.load(source)
+        volume = numpy.array(image.dataobj)[..., 0, volume]
+        nibabel.save(nibabel.Nifti1Image(volume, image.affine), target)
 
 class ClustersVolumeReport(spire.TaskFactory):
     def __init__(self, clusters, atlas, labels, report, min_size=None):

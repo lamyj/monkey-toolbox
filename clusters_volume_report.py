@@ -25,9 +25,9 @@ def clusters_volume_report(clusters, atlas, labels, report, min_size=None):
         volumes, columns=["Name", "Number", "Volume (mm³)"])
     volumes.sort_values("Volume (mm³)", inplace=True, ascending=False)
     
-    if report.endswith(".csv"):
+    if str(report).endswith(".csv"):
         volumes.to_csv(report, index=False)
-    elif report.endswith(".xlsx"):
+    elif str(report).endswith(".xlsx"):
         volumes.to_excel(report, index=False)
     else:
         raise Exception("Unknown output format: {}".format(report))
