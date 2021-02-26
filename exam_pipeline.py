@@ -3,12 +3,12 @@ import spire.ants
 import tasks
 
 class ExamPipeline(object):
-    def __init__(self, paths, transforms, atlas):
+    def __init__(self, paths, transforms, reference):
         self.source = paths.source
         self.destination = paths.destination
         
         self.transforms = transforms
-        self.atlas = atlas
+        self.reference = reference
         
         self.cohort_template = None
         self.cohort_transforms = None
@@ -19,7 +19,7 @@ class ExamPipeline(object):
     def to_standard(self):
         return self._get_task(
             tasks.ManualTransform, 
-            self.source, self.transforms, self.atlas,
+            self.source, self.transforms, self.reference,
             self.destination/"to_standard.txt")
     
     @property
@@ -27,7 +27,7 @@ class ExamPipeline(object):
         return self._get_task(
             tasks.Reorient,
             self.source, self.transforms, self.to_standard.targets[0], 
-            self.atlas, self.destination/"reoriented.nii.gz")
+            self.reference, self.destination/"reoriented.nii.gz")
     
     @property
     def preprocessing(self):
