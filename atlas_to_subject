@@ -50,6 +50,10 @@ def main():
     
     dictionary = pandas.read_csv(
         arguments.dictionary, names=["label", "name", "r", "g", "b", "a"], sep=" ")
+    if dictionary["name"].isna().any():
+        dictionary = pandas.read_csv(arguments.dictionary, sep="\t")
+        dictionary.rename(
+            {"Index": "label", "Full_Name": "name"}, axis="columns", inplace=True)
     
     image = nibabel.load(arguments.prefix+"_labels.nii.gz")
     voxel_volume = numpy.abs(numpy.linalg.det(image.affine[:3,:3]))
