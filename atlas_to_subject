@@ -35,7 +35,7 @@ def main():
         transforms = ["{}{}".format(stem, x) for x in suffixes]
     else:
         subprocess.check_call([
-            "antsRegistrationSyN.sh", "-d", "3", "-p", "f",
+            "antsRegistrationSyN.sh", "-d", "3", "-p", "d",
             "-n", subprocess.check_output("nproc").strip(),
             "-f", arguments.subject, "-m", arguments.reference, 
             "-t", "s", "-o", arguments.prefix])
